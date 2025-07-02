@@ -9,54 +9,26 @@
   <!-- Open Sans Font -->
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
   <style>
-    html, body, #map { height:100%; margin:0; padding:0; font-family:'Open Sans', sans-serif; }
+    html, body, #map { height:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; }
     /* Such-UI über der Karte */
     #search-ui {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      padding: 4px; /* reduziert */
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.3);
-      z-index: 1000;
-      display: flex;
-      gap: 3px; /* reduziert */
-      flex-wrap: wrap;
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      background:white; padding:4px; border-radius:8px;
+      box-shadow:0 0 8px rgba(0,0,0,0.3); z-index:1000;
+      display:flex; gap:3px; flex-wrap:wrap;
     }
-    #search-ui input {
-      flex: 1 1 150px;
-      min-width: 100px;
-      padding: 2px; /* reduziert */
-    }
-    #search-ui button {
-      padding: 2px 4px; /* reduziert */
-    }
-    /* Autocomplete-Vorschläge */
+    #search-ui input { flex:1 1 150px; min-width:100px; padding:2px; height:24px; line-height:24px; }
+    #search-ui button { padding:2px 4px; }
     #search-ui #suggestions {
-      position:absolute;
-      top:calc(100% + 4px);
-      left:0;
-      background:white;
-      border:1px solid #ccc;
-      border-radius:4px;
-      max-height:150px;
-      overflow-y:auto;
-      width:100%;
-      box-shadow:0 2px 6px rgba(0,0,0,0.2);
-      z-index:1001;
+      position:absolute; top:calc(100% + 4px); left:0;
+      background:white; border:1px solid #ccc; border-radius:4px;
+      max-height:150px; overflow-y:auto; width:100%;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2); z-index:1001;
     }
     #search-ui #suggestions div { padding:4px 8px; cursor:pointer; }
     #search-ui #suggestions div:hover { background:#eee; }
     @media (max-width:600px) {
-      #search-ui {
-        top:5px;
-        left:5px;
-        transform:none;
-        width:calc(100% - 10px);
-        flex-direction:column;
-      }
+      #search-ui { top:5px; left:5px; transform:none; width:calc(100% - 10px); flex-direction:column; }
       #search-ui input, #search-ui button { width:100%; }
     }
     .ballot-icon { font-size:24px; line-height:24px; }
@@ -65,7 +37,6 @@
     .popup-content img { display:block; margin:0 auto 5px; max-width:80px; border-radius:50%; }
     .popup-content .flip { display:inline-block; transform:scaleX(-1); }
     .district-label { background:rgba(0,0,0,0.5); color:white; font-weight:bold; border:none; font-size:0.9em; padding:2px 4px; }
-    /* Popups über Such-UI */
     .leaflet-popup { z-index:2001 !important; }
   </style>
 </head>
@@ -76,99 +47,50 @@
     <button id="search-btn">Suchen</button>
     <div id="suggestions"></div>
   </div>
-
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-pip@latest/leaflet-pip.min.js"></script>
   <script>
-    // Karte initialisieren
     const map = L.map('map').setView([51.97565627013313,7.4134788545201395],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OSM' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
     const ballotIcon = L.divIcon({ html:'🗳️', className:'ballot-icon', iconSize:[32,32], iconAnchor:[16,32] });
-
-    // Datencontainer
     let districtLayer, pollingStations = [], streets = [], stationLookup = {}, highlighted;
     const stationsLayer = L.layerGroup().addTo(map);
-
     const input = document.getElementById('street-search');
     const searchBtn = document.getElementById('search-btn');
     const suggestions = document.getElementById('suggestions');
-
-    // GeoJSON laden
     fetch('wahlbezirke_Havixbeck.geojson')
-      .then(r => r.json())
-      .then(data => {
-        districtLayer = L.geoJSON(data, {
-          style: () => ({ fillColor:'#E3000F', weight:1, color:'#fff', dashArray:'4 4', fillOpacity:1 }),
-          onEachFeature: (feature, layer) => layer.on('click', () => applyHighlight(layer))
-        }).addTo(map);
+      .then(r => r.json()).then(data => {
+        districtLayer = L.geoJSON(data, {style:()=>({fillColor:'#E3000F',weight:1,color:'#fff',dashArray:'4 4',fillOpacity:1}), onEachFeature:(f,l)=>l.on('click',()=>applyHighlight(l))}).addTo(map);
       });
-
-    // Wahllokale laden & Lookup aufbauen
     fetch('wahllokale_havixbeck.json')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('Netzwerkantwort war nicht ok: ' + r.status); return r.json(); })
       .then(data => {
         pollingStations = data;
+        stationLookup = {};
         data.forEach(loc => stationLookup[String(loc.bezirk)] = loc);
-      });
-
-    // Straßenliste für Autocomplete laden
+        // Zu Beginn alle Wahlbezirke benennen
+        if (districtLayer) {
+          districtLayer.eachLayer(layer => {
+            const code = layer.feature.properties.name;
+            const info = stationLookup[code];
+            if (info) {
+              layer.bindTooltip(
+                `Wahlbezirk: ${info.name}`,
+                { permanent: true, direction: 'center', className: 'district-label' }
+              );
+            }
+          });
+        }
+      })
+      .catch(err => console.error('Fehler beim Laden der Wahllokale:', err));
     fetch('autocomplete_strassenliste_havixbeck.json')
-      .then(r => r.json())
-      .then(data => { streets = data; });
-
-    // Wahlbezirk hervorheben & Popup
-    function applyHighlight(layer) {
-      if (highlighted) districtLayer.resetStyle(highlighted);
-      highlighted = layer;
-      layer.setStyle({ fillOpacity:0.5, color:'#fff', dashArray:'4 4', weight:3 });
-      map.fitBounds(layer.getBounds());
-
-      const bz = layer.feature.properties.name;
-      const info = stationLookup[bz];
-      if (info) {
-        const pronoun = info.geschlecht==='w'?'ihren':'seinen';
-        layer.bindPopup(
-          `<div class="popup-content">${info.thumbnail?`<img src="${info.thumbnail}" alt="">`:``}` +
-          `<strong>Bezirk ${info.bezirk}: ${info.kandidat}</strong><br>` +
-          `<a href="${info.url}" target="_blank">` +
-          `<span style="color:#E3000F;font-weight:bold;">➤➤ Informationen zu ${info.vorname} und ${pronoun} Schwerpunkten <span class="flip">➤➤</span></span></a></div>`
-        ).openPopup();
-      }
-      // Wahllokal-Pin anzeigen mit Label
-      stationsLayer.clearLayers();
-      const loc = stationLookup[bz];
-      if (loc) {
-        const m = L.marker([loc.lat,loc.lon],{ icon: ballotIcon, zIndexOffset:1000 }).addTo(stationsLayer);
-        m.bindTooltip(`Wahllokal: ${loc.name}`, { permanent:true, direction:'top', offset:[0,-10], className:'station-label' }).openTooltip();
-      }
-    }
-
-    // Autocomplete-Logik
-    input.addEventListener('input', () => {
-      suggestions.innerHTML = '';
-      const v = input.value.toLowerCase(); if (!v) return;
-      streets.filter(s => s.toLowerCase().includes(v)).slice(0,10).forEach(item => {
-        const d = document.createElement('div'); d.textContent = item;
-        d.onclick = () => { input.value = item; suggestions.innerHTML = ''; };
-        suggestions.appendChild(d);
-      });
+      .then(r=>r.json()).then(data=>streets=data);
+    function applyHighlight(layer){ if(highlighted) districtLayer.resetStyle(highlighted); highlighted=layer; layer.setStyle({fillOpacity:0.5,color:'#fff',dashArray:'4 4',weight:3}); map.fitBounds(layer.getBounds()); const bz=layer.feature.properties.name; const info=stationLookup[bz]; if(info){ const pronoun=info.geschlecht==='w'?'ihren':'seinen'; layer.bindPopup(`<div class="popup-content">${info.thumbnail?`<img src="${info.thumbnail}" alt="">`:``}<strong>Bezirk ${info.bezirk}: ${info.kandidat}</strong><br><a href="${info.url}" target="_blank"><span style="color:#E3000F;font-weight:bold;">➤➤ Informationen zu ${info.vorname} und ${pronoun} Schwerpunkten <span class="flip">➤➤</span></span></a></div>`).openPopup(); } stationsLayer.clearLayers(); const loc=stationLookup[bz]; if(loc){ const m=L.marker([loc.lat,loc.lon],{icon:ballotIcon,zIndexOffset:1000}).addTo(stationsLayer); m.bindTooltip(`Wahllokal: ${loc.name}`,{permanent:true,direction:'top',offset:[0,-10],className:'station-label'}).openTooltip(); } }
+    input.addEventListener('input',()=>{ suggestions.innerHTML=''; const v=input.value.toLowerCase(); if(!v) return; streets.filter(s=>s.toLowerCase().includes(v)).slice(0,10).forEach(item=>{ const d=document.createElement('div'); d.textContent=item; d.onclick=()=>{ input.value=item; suggestions.innerHTML=''; }; suggestions.appendChild(d); }); });
+    searchBtn.addEventListener('click',()=>{ const q=input.value.trim(); if(!q) return; fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q+', Havixbeck, Deutschland')}`)
+        .then(r=>r.json()).then(res=>{ if(!res.length) return alert('Straße nicht gefunden.'); const lat=+res[0].lat, lon=+res[0].lon; const results=leafletPip.pointInLayer([lon,lat],districtLayer); if(results.length) applyHighlight(results[0]); else alert('Kein Wahlbezirk gefunden'); }).catch(()=>alert('Fehler'));
     });
-
-    // Suche per Geokodierung
-    searchBtn.addEventListener('click', () => {
-      const q = input.value.trim(); if (!q) return;
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q+', Havixbeck, Deutschland')}`)
-        .then(r => r.json()).then(res => {
-          if (!res.length) return alert('Straße nicht gefunden.');
-          const lat = +res[0].lat, lon = +res[0].lon;
-          const results = leafletPip.pointInLayer([lon, lon], districtLayer);
-          if (results.length) applyHighlight(results[0]); else alert('Kein Wahlbezirk gefunden');
-        }).catch(() => alert('Fehler bei der Suche'));
-    });
-
-    // Reset über Escape
-    document.addEventListener('keydown', e => { if (e.key==='Escape') location.reload(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') location.reload(); });
   </script>
 </body>
 </html>
