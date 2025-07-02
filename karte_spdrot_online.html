@@ -17,16 +17,22 @@
       left: 50%;
       transform: translateX(-50%);
       background: white;
-      padding: 8px;
+      padding: 4px; /* reduziert */
       border-radius: 8px;
       box-shadow: 0 0 8px rgba(0,0,0,0.3);
       z-index: 1000;
       display: flex;
-      gap: 5px;
+      gap: 3px; /* reduziert */
       flex-wrap: wrap;
     }
-    #search-ui input { flex:1 1 150px; min-width:100px; padding:4px; }
-    #search-ui button { padding:4px 8px; }
+    #search-ui input {
+      flex: 1 1 150px;
+      min-width: 100px;
+      padding: 2px; /* reduziert */
+    }
+    #search-ui button {
+      padding: 2px 4px; /* reduziert */
+    }
     /* Autocomplete-Vorschläge */
     #search-ui #suggestions {
       position:absolute;
