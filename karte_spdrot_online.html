@@ -106,10 +106,44 @@
 
     // Straßenliste laden
     fetch('autocomplete_strassenliste_havixbeck.json')
-      .then(r=>r.json()).then(data=>streets=data);
+      .then(r=>r.json())
+      .then(data=> streets = data);
 
     // Highlight & Popup
     function applyHighlight(layer) {
+      if (highlighted) districtLayer.resetStyle(highlighted);
+      highlighted = layer;
+      layer.setStyle({ fillOpacity:0.5, color:'#fff', dashArray:'4 4', weight:3 });
+      map.fitBounds(layer.getBounds());
+
+      const bz = layer.feature.properties.name;
+      const info = stationLookup[bz];
+      if (info) {
+        const pronoun = info.geschlecht === 'w' ? 'ihren' : 'seinen';
+        // Popup mit Thumbnail und Info
+        const imgHtml = info.thumbnail ? '<img src="' + info.thumbnail + '" alt="">' : '';
+        layer.bindPopup(
+          '<div class="popup-content">' +
+            imgHtml +
+            '<strong>Bezirk ' + info.bezirk + ': ' + info.kandidat + '</strong><br>' +
+            '<a href="' + info.url + '" target="_blank">' +
+              '<span style="color:#E3000F;font-weight:bold;">➤➤ Informationen zu ' + info.vorname + ' und ' + pronoun + ' Schwerpunkten <span class="flip">➤➤</span></span>' +
+            '</a>' +
+          '</div>'
+        ).openPopup();
+      }
+
+      // Wahllokal-Pin
+      stationsLayer.clearLayers();
+      const loc = stationLookup[bz];
+      if (loc) {
+        const m = L.marker([loc.lat,loc.lon],{ icon: ballotIcon, zIndexOffset:1000 }).addTo(stationsLayer);
+        m.bindTooltip(
+          'Wahllokal: ' + loc.name,
+          { permanent:true, direction:'top', offset:[0,-10], className:'station-label' }
+        ).openTooltip();
+      }
+    }
       if (highlighted) districtLayer.resetStyle(highlighted);
       highlighted = layer;
       layer.setStyle({ fillOpacity:0.5, color:'#fff', dashArray:'4 4', weight:3 });
