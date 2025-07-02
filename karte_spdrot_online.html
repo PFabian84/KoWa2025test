@@ -4,105 +4,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPD Havixbeck – Wahlkarte (Online)</title>
-
-  <!-- Klaro Consent Manager (self‑hosted) -->
-  <link rel="stylesheet" href="/assets/klaro.min.css">
-  <script defer src="/assets/klaro.js" data-config="klaroConfig"></script>
-
-  <!-- Klaro Konfiguration -->
-  <script>
-    window.klaroConfig = {
-      version: 1,
-      elementID: 'cookie-modal',
-      storageMethod: 'cookie',
-      cookieName: 'klaro',
-      cookieExpiresAfterDays: 180,
-      default: false,          // Opt‑in‑Standard
-      mustConsent: true,      // Banner muss beantwortet werden
-      acceptAll: true,
-      hideDeclineAll: false,
-      lang: 'de',
-      translations: {
-        de: {
-          consentModal: {
-            title: 'Datenschutz‑Einstellungen',
-            description: 'Wir nutzen externe Dienste (Karte, Schriftarten). Bitte wählen Sie, was geladen werden darf.',
-            acceptAll: 'Alle akzeptieren',
-            declineAll: 'Alles ablehnen'
-          },
-          purposes: {
-            external: 'Externe Medien'
-          }
-        }
-      },
-      apps: [
-        {
-          name: 'googlefonts',
-          title: 'Google Fonts – Open Sans',
-          purposes: ['external'],
-          cookies: [],
-          onlyOnce: true,
-          callback: (consent) => {
-            if (consent) {
-              const link = document.createElement('link');
-              link.rel = 'stylesheet';
-              link.href = 'https://fonts.googleapis.com/css2?family=Open+Sans&display=swap';
-              document.head.appendChild(link);
-            }
-          }
-        },
-        {
-          name: 'leaflet',
-          title: 'Interaktive Karte (Leaflet & OSM)',
-          purposes: ['external'],
-          cookies: [],
-          onlyOnce: true,
-          callback: (consent) => {
-            if (consent) window.loadLeaflet();
-          }
-        }
-      ]
-    };
-  </script>
-
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Open Sans Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
   <style>
-    html, body { height: 100%; margin: 0; }
-    body { font-family: 'Open Sans', sans-serif; }
-    #map { height: 100%; }
-
-    /* Such‑UI über der Karte */
+    html, body, #map { height:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; }
+    /* Such-UI über der Karte */
     #search-ui {
-      position: absolute;
-      top: 10px; left: 50%; transform: translateX(-50%);
-      background: white; padding: 4px; border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.3); z-index: 1000;
-      display: none; /* erst nach Consent sichtbar */
-      gap: 3px; flex-wrap: wrap;
+      position:absolute;
+      top:10px; left:50%; transform:translateX(-50%);
+      background:white; padding:4px; border-radius:8px;
+      box-shadow:0 0 8px rgba(0,0,0,0.3); z-index:1000;
+      display:flex; gap:3px; flex-wrap:wrap;
     }
-    #search-ui input { flex: 1 1 150px; min-width: 100px; padding: 2px; height: 24px; line-height: 24px; }
-    #search-ui button { padding: 2px 4px; }
+    #search-ui input { flex:1 1 150px; min-width:100px; padding:2px; height:24px; line-height:24px; }
+    #search-ui button { padding:2px 4px; }
     #search-ui #suggestions {
-      position: absolute; top: calc(100% + 4px); left: 0;
-      background: white; border: 1px solid #ccc; border-radius: 4px;
-      max-height: 150px; overflow-y: auto; width: 100%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1001;
+      position:absolute; top:calc(100% + 4px); left:0;
+      background:white; border:1px solid #ccc; border-radius:4px;
+      max-height:150px; overflow-y:auto; width:100%;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2); z-index:1001;
     }
-    #search-ui #suggestions div { padding: 4px 8px; cursor: pointer; }
-    #search-ui #suggestions div:hover { background: #eee; }
-    @media (max-width: 600px) {
-      #search-ui { top: 5px; left: 5px; transform: none; width: calc(100% - 10px); flex-direction: column; }
-      #search-ui input, #search-ui button { width: 100%; }
+    #search-ui #suggestions div { padding:4px 8px; cursor:pointer; }
+    #search-ui #suggestions div:hover { background:#eee; }
+    @media (max-width:600px) {
+      #search-ui { top:5px; left:5px; transform:none; width:calc(100% - 10px); flex-direction:column; }
+      #search-ui input, #search-ui button { width:100%; }
     }
-    .ballot-icon { font-size: 24px; line-height: 24px; }
-    .station-label { background: white; color: black; font-size: 0.8em; padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; }
-    .popup-content { text-align: center; }
-    .popup-content img { display: block; margin: 0 auto 5px; max-width: 80px; border-radius: 50%; }
-    .popup-content .flip { display: inline-block; transform: scaleX(-1); }
-    .district-label { background: rgba(0,0,0,0.5); color: white; font-weight: bold; border: none; font-size: 0.9em; padding: 2px 4px; }
-    .leaflet-popup { z-index: 2001 !important; }
-
-    footer { position: absolute; bottom: 10px; left: 10px; z-index: 1100; background: white; padding: 4px 6px; border-radius: 6px; font-size: 0.8em; }
-    footer a { text-decoration: none; color: #0070f3; }
+    .ballot-icon { font-size:24px; line-height:24px; }
+    .station-label { background:white; color:black; font-size:0.8em; padding:2px 4px; border-radius:4px; border:1px solid #ccc; }
+    .popup-content { text-align:center; }
+    .popup-content img { display:block; margin:0 auto 5px; max-width:80px; border-radius:50%; }
+    .popup-content .flip { display:inline-block; transform:scaleX(-1); }
+    .district-label { background:rgba(0,0,0,0.5); color:white; font-weight:bold; border:none; font-size:0.9em; padding:2px 4px; }
+    .leaflet-popup { z-index:2001 !important; }
   </style>
 </head>
 <body>
@@ -114,149 +50,144 @@
     <div id="suggestions"></div>
   </div>
 
-  <footer><a href="#" onclick="klaro.show(); return false;">Cookie‑Einstellungen</a></footer>
-
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-pip@latest/leaflet-pip.min.js"></script>
   <script>
-    /* Leaflet & Karten‑Assets nach Zustimmung laden */
-    function loadLeaflet() {
-      if (window._leafletLoaded) return;
+    // Karte initialisieren
+    const map = L.map('map').setView([51.97565627013313,7.4134788545201395],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OSM' }).addTo(map);
+    const ballotIcon = L.divIcon({ html:'🗳️', className:'ballot-icon', iconSize:[32,32], iconAnchor:[16,32] });
 
-      // CSS
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(css);
+    // Datencontainer
+    let districtLayer, pollingStations = [], streets = [], stationLookup = {}, highlighted;
+    const stationsLayer = L.layerGroup().addTo(map);
 
-      // Leaflet JS
-      const leaflet = document.createElement('script');
-      leaflet.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      leaflet.onload = () => {
-        const pip = document.createElement('script');
-        pip.src = 'https://unpkg.com/leaflet-pip@latest/leaflet-pip.min.js';
-        pip.onload = initMap; // erst dann eigentliche Karte initialisieren
-        document.head.appendChild(pip);
-      };
-      document.head.appendChild(leaflet);
-      window._leafletLoaded = true;
-    }
+    // UI-Elemente
+    const input = document.getElementById('street-search');
+    const searchBtn = document.getElementById('search-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const suggestions = document.getElementById('suggestions');
 
-    /* Vollständige Karten‑Logik */
-    function initMap() {
-      document.getElementById('search-ui').style.display = 'flex'; // UI einblenden
-
-      const map = L.map('map').setView([51.97565627013313, 7.4134788545201395], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(map);
-      const ballotIcon = L.divIcon({ html: '🗳️', className: 'ballot-icon', iconSize: [32, 32], iconAnchor: [16, 32] });
-
-      let districtLayer, pollingStations = [], streets = [], stationLookup = {}, highlighted;
-      const stationsLayer = L.layerGroup().addTo(map);
-
-      const input = document.getElementById('street-search');
-      const searchBtn = document.getElementById('search-btn');
-      const resetBtn = document.getElementById('reset-btn');
-      const suggestions = document.getElementById('suggestions');
-
-      function bindDistrictLabels() {
-        if (!districtLayer) return;
-        districtLayer.eachLayer(layer => {
-          const code = layer.feature.properties.name;
-          const info = stationLookup[code];
-          if (info) {
-            layer.bindTooltip('Wahlbezirk: ' + info.bezirk, { permanent: true, direction: 'center', className: 'district-label' });
-          }
-        });
-      }
-
-      fetch('wahlbezirke_Havixbeck.geojson')
-        .then(r => r.json())
-        .then(data => {
-          districtLayer = L.geoJSON(data, {
-            style: () => ({ fillColor: '#E3000F', weight: 1, color: '#fff', dashArray: '4 4', fillOpacity: 1 }),
-            onEachFeature: (feat, layer) => layer.on('click', () => applyHighlight(layer))
-          }).addTo(map);
-          bindDistrictLabels();
-        })
-        .catch(err => console.error('Fehler beim Laden der Bezirke:', err));
-
-      fetch('wahllokale_havixbeck.json')
-        .then(r => r.json())
-        .then(data => {
-          pollingStations = data;
-          stationLookup = {};
-          data.forEach(loc => stationLookup[String(loc.bezirk)] = loc);
-          bindDistrictLabels();
-        })
-        .catch(err => console.error('Fehler beim Laden der Wahllokale:', err));
-
-      fetch('autocomplete_strassenliste_havixbeck.json')
-        .then(r => r.json())
-        .then(data => { streets = data; })
-        .catch(err => console.error('Fehler beim Laden der Straßenliste:', err));
-
-      function applyHighlight(layer) {
-        if (highlighted) districtLayer.resetStyle(highlighted);
-        highlighted = layer;
-        layer.setStyle({ fillOpacity: 0.5, color: '#fff', dashArray: '4 4', weight: 3 });
-        map.fitBounds(layer.getBounds());
-
-        const bz = layer.feature.properties.name;
-        const info = stationLookup[bz];
+    // Helper: Bezirks-Labels binden
+    function bindDistrictLabels() {
+      if (!districtLayer) return;
+      districtLayer.eachLayer(layer => {
+        const code = layer.feature.properties.name;
+        const info = stationLookup[code];
         if (info) {
-          const pronoun = info.geschlecht === 'w' ? 'ihren' : 'seinen';
-          const imgHtml = info.thumbnail ? '<img src="' + info.thumbnail + '" alt="">' : '';
-          layer.bindPopup(
-            '<div class="popup-content">' +
-            imgHtml +
-            '<strong>Bezirk ' + info.bezirk + ': ' + info.kandidat + '</strong><br>' +
-            '<a href="' + info.url + '" target="_blank">' +
-            '<span style="color:#E3000F;font-weight:bold;">➤➤ Informationen zu ' + info.vorname + ' und ' + pronoun + ' Schwerpunkten <span class="flip">➤➤</span></span>' +
-            '</a>' +
-            '</div>'
-          ).openPopup();
+          layer.bindTooltip(
+            `Wahlbezirk: ${info.bezirk}`,
+            { permanent:true, direction:'center', className:'district-label' }
+          );
         }
+      });
+    }
 
-        stationsLayer.clearLayers();
-        const loc = stationLookup[bz];
-        if (loc) {
-          const m = L.marker([loc.lat, loc.lon], { icon: ballotIcon, zIndexOffset: 1000 }).addTo(stationsLayer);
-          m.bindTooltip('Wahllokal: ' + loc.name, { permanent: true, direction: 'top', offset: [0, -10], className: 'station-label' }).openTooltip();
-        }
+    // GeoJSON laden
+    fetch('wahlbezirke_Havixbeck.geojson')
+      .then(r => r.json())
+      .then(data => {
+        districtLayer = L.geoJSON(data, {
+          style: () => ({ fillColor:'#E3000F', weight:1, color:'#fff', dashArray:'4 4', fillOpacity:1 }),
+          onEachFeature: (feat,layer) => layer.on('click',()=>applyHighlight(layer))
+        }).addTo(map);
+        bindDistrictLabels();
+      })
+      .catch(err => console.error('Fehler beim Laden der Bezirke:', err));
+
+    // Wahllokale laden und Lookup aufbauen
+    fetch('wahllokale_havixbeck.json')
+      .then(r => {
+        if (!r.ok) throw new Error('Netzwerkantwort war nicht ok: ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        pollingStations = data;
+        stationLookup = {};
+        data.forEach(loc => stationLookup[String(loc.bezirk)] = loc);
+        bindDistrictLabels();
+      })
+      .catch(err => console.error('Fehler beim Laden der Wahllokale:', err));
+
+    // Straßenliste laden
+    fetch('autocomplete_strassenliste_havixbeck.json')
+      .then(r => r.json())
+      .then(data => { streets = data; })
+      .catch(err => console.error('Fehler beim Laden der Straßenliste:', err));
+
+    // Highlight & Popup
+    function applyHighlight(layer) {
+      if (highlighted) districtLayer.resetStyle(highlighted);
+      highlighted = layer;
+      layer.setStyle({ fillOpacity:0.5, color:'#fff', dashArray:'4 4', weight:3 });
+      map.fitBounds(layer.getBounds());
+
+      const bz = layer.feature.properties.name;
+      const info = stationLookup[bz];
+      if (info) {
+        const pronoun = info.geschlecht === 'w' ? 'ihren' : 'seinen';
+        const imgHtml = info.thumbnail ? '<img src="' + info.thumbnail + '" alt="">' : '';
+        layer.bindPopup(
+          '<div class="popup-content">' +
+          imgHtml +
+          '<strong>Bezirk ' + info.bezirk + ': ' + info.kandidat + '</strong><br>' +
+          '<a href="' + info.url + '" target="_blank">' +
+          '<span style="color:#E3000F;font-weight:bold;">➤➤ Informationen zu ' + info.vorname + ' und ' + pronoun + ' Schwerpunkten <span class="flip">➤➤</span></span>' +
+          '</a>' +
+          '</div>'
+        ).openPopup();
       }
 
-      input.addEventListener('input', () => {
-        suggestions.innerHTML = '';
-        const v = input.value.toLowerCase();
-        if (!v) return;
-        streets.filter(s => s.toLowerCase().includes(v)).slice(0, 10).forEach(item => {
-          const d = document.createElement('div');
-          d.textContent = item;
-          d.onclick = () => { input.value = item; suggestions.innerHTML = ''; };
-          suggestions.appendChild(d);
-        });
-      });
-
-      searchBtn.addEventListener('click', () => {
-        const q = input.value.trim(); if (!q) return;
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Havixbeck, Deutschland')}`)
-          .then(r => r.json())
-          .then(res => {
-            if (!res.length) return alert('Straße nicht gefunden.');
-            const lat = +res[0].lat, lon = +res[0].lon;
-            const results = leafletPip.pointInLayer([lon, lat], districtLayer);
-            if (results.length) applyHighlight(results[0]); else alert('Kein Wahlbezirk gefunden');
-          })
-          .catch(() => alert('Fehler bei der Suche'));
-      });
-
-      resetBtn.addEventListener('click', () => {
-        input.value = ''; suggestions.innerHTML = '';
-        map.setView([51.97565627013313, 7.4134788545201395], 13);
-        if (highlighted) districtLayer.resetStyle(highlighted);
-        stationsLayer.clearLayers();
-      });
-
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') resetBtn.click(); });
+      // Wahllokal-Pin anzeigen mit Label
+      stationsLayer.clearLayers();
+      const loc = stationLookup[bz];
+      if (loc) {
+        const m = L.marker([loc.lat, loc.lon], { icon: ballotIcon, zIndexOffset:1000 }).addTo(stationsLayer);
+        m.bindTooltip(
+          'Wahllokal: ' + loc.name,
+          { permanent:true, direction:'top', offset:[0,-10], className:'station-label' }
+        ).openTooltip();
+      }
     }
+
+    // Autocomplete-Logik
+    input.addEventListener('input', () => {
+      suggestions.innerHTML = '';
+      const v = input.value.toLowerCase();
+      if (!v) return;
+      streets.filter(s => s.toLowerCase().includes(v)).slice(0,10).forEach(item => {
+        const d = document.createElement('div');
+        d.textContent = item;
+        d.onclick = () => { input.value = item; suggestions.innerHTML = ''; };
+        suggestions.appendChild(d);
+      });
+    });
+
+    // Suche per Geokodierung
+    searchBtn.addEventListener('click', () => {
+      const q = input.value.trim(); if (!q) return;
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Havixbeck, Deutschland')}`)
+        .then(r => r.json())
+        .then(res => {
+          if (!res.length) return alert('Straße nicht gefunden.');
+          const lat = +res[0].lat, lon = +res[0].lon;
+          const results = leafletPip.pointInLayer([lon, lat], districtLayer);
+          if (results.length) applyHighlight(results[0]); else alert('Kein Wahlbezirk gefunden');
+        })
+        .catch(() => alert('Fehler bei der Suche'));
+    });
+
+    // Reset-Funktion
+    resetBtn.addEventListener('click', () => {
+      input.value = ''; suggestions.innerHTML = '';
+      map.setView([51.97565627013313,7.4134788545201395],13);
+      if (highlighted) districtLayer.resetStyle(highlighted);
+      stationsLayer.clearLayers();
+    });
+
+    // Escape = Reset
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') resetBtn.click(); });
   </script>
 </body>
 </html>
