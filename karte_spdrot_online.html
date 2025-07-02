@@ -107,7 +107,7 @@
         stationLookup = {};
         data.forEach(loc => stationLookup[String(loc.bezirk)] = loc);
         bindDistrictLabels();
-      }) // entfernt überflüssige schließende geschweifte Klammer
+      })
       .catch(err => console.error('Fehler beim Laden der Wahllokale:', err));
 
     // Straßenliste laden
