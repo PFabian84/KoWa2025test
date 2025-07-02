@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPD Havixbeck – Unsere Direktkandidierenden in den 13 Wahlkreisen in Havixbeck und Hohenholte</title>
+  <title>SPD Havixbeck – Wahlkarte (Online)</title>
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Open Sans Font -->
@@ -77,7 +78,7 @@
         const info = stationLookup[code];
         if (info) {
           layer.bindTooltip(
-            `Wahlbezirk: ${info.bezirk}`,
+            Wahlbezirk: ${info.bezirk},
             { permanent:true, direction:'center', className:'district-label' }
           );
         }
@@ -139,6 +140,7 @@
         ).openPopup();
       }
 
+      // Wahllokal-Pin anzeigen mit Label
       stationsLayer.clearLayers();
       const loc = stationLookup[bz];
       if (loc) {
@@ -158,4 +160,35 @@
       streets.filter(s => s.toLowerCase().includes(v)).slice(0,10).forEach(item => {
         const d = document.createElement('div');
         d.textContent = item;
-        d.onclick = () => { input.value = item; suggestions
+        d.onclick = () => { input.value = item; suggestions.innerHTML = ''; };
+        suggestions.appendChild(d);
+      });
+    });
+
+    // Suche per Geokodierung
+    searchBtn.addEventListener('click', () => {
+      const q = input.value.trim(); if (!q) return;
+      fetch(https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Havixbeck, Deutschland')})
+        .then(r => r.json())
+        .then(res => {
+          if (!res.length) return alert('Straße nicht gefunden.');
+          const lat = +res[0].lat, lon = +res[0].lon;
+          const results = leafletPip.pointInLayer([lon, lat], districtLayer);
+          if (results.length) applyHighlight(results[0]); else alert('Kein Wahlbezirk gefunden');
+        })
+        .catch(() => alert('Fehler bei der Suche'));
+    });
+
+    // Reset-Funktion
+    resetBtn.addEventListener('click', () => {
+      input.value = ''; suggestions.innerHTML = '';
+      map.setView([51.97565627013313,7.4134788545201395],13);
+      if (highlighted) districtLayer.resetStyle(highlighted);
+      stationsLayer.clearLayers();
+    });
+
+    // Escape = Reset
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') resetBtn.click(); });
+  </script>
+</body>
+</html>
