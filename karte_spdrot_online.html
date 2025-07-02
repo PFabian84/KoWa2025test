@@ -77,7 +77,7 @@
         const code = layer.feature.properties.name;
         const info = stationLookup[code];
         if (info) {
-          layer.bindTooltip(`Wahlbezirk: ${info.name}`, { permanent:true, direction:'center', className:'district-label' });
+          layer.bindTooltip(`Wahlbezirk: ${info.bezirk}`, { permanent:true, direction:'center', className:'district-label' });
         }
       });
     }
